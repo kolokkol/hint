@@ -19,6 +19,10 @@ import site
 ###############################################################################
 
 # Create an exhausive list of all modules and packages
+
+# A considerable amount of time in this code is spent in looping
+# and os.walk. To achieve better startup time, this should
+# probably be rewritten in C.
 modules = set()
 p = os.path
 for basepath in sys.path:
@@ -43,8 +47,14 @@ def differences(a, b):
 try:
     from _accelerate import ldist
 except ImportError:
-    from levenshtein import ldist
-differences = ldist
+    try:
+        from levenshtein import ldist
+    except ImportError:
+        pass
+    else:
+        differences = ldist
+else:
+    differences = ldist
 
 def max_differences(word):
     """Determine the maximum allowed differences between two word.
@@ -219,7 +229,6 @@ class HandleUndefinedVariableError(NameError):
                 or_name = name
                 if not strict:
                     name = name.replace('_', '')
-                print(attr, name)
                 matches.setdefault(differences(attr, name), []).append(or_name)
                 if (name in attr or attr in name and
                         len(attr) + len(name) < len(attr) * 3):

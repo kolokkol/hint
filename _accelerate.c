@@ -1,11 +1,19 @@
-#include "Python.h"
-
 /* This module provides C implementations for the most heavy
 operations in the hint package.
 
 Currently the following functions/operations are defined in C code:
 	- Computing Lenenshtein distance
 */
+
+#include "Python.h"
+
+/*------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+----- Implementation levenshtein distance --------------------------------------
+------------------------------------------------------------------------------*/
+
+/* This function calculates the Levenshtein distance of two
+Python Unicode strings using a simple matrix algorithm */
 
 
 /* We need to find the minimum of 3 integer values;
@@ -31,13 +39,13 @@ static PyObject *levenshtein_distance(PyObject *self, PyObject *args) {
 	Py_INCREF(a);
 	Py_INCREF(b);
 
-	/* Type-check the PyObject*/
+	/* Type-check the PyObjects */
 	if (!(PyUnicode_CheckExact(a) && PyUnicode_CheckExact(b))) {
 		PyErr_SetString(PyExc_TypeError, "Expected two strings");
-		/* Decrease/re-set reference count */
+		/* Decrease reference count */
 		Py_DECREF(a);
 		Py_DECREF(b);
-		return NULL; 	/* Indicate an exception has occurred */
+		return NULL;
 	}
 
 	Py_ssize_t size_a = PyUnicode_GetLength(a);
@@ -73,6 +81,8 @@ static PyObject *levenshtein_distance(PyObject *self, PyObject *args) {
 	void *raw_b = PyUnicode_DATA(b);
 	int kind_a = PyUnicode_KIND(a);
 	int kind_b = PyUnicode_KIND(b);
+
+	/* Actual calculation */
 	for (int j = 1; j <= size_b; j++) {
 		for (int i = 1; i <= size_a; i++) {
 			int cost = PyUnicode_READ(kind_a, raw_a, i-1) == PyUnicode_READ(kind_b, raw_b, j-1) ? 0 : 1;
@@ -93,15 +103,25 @@ static PyObject *levenshtein_distance(PyObject *self, PyObject *args) {
 	Py_DECREF(a);
 	Py_DECREF(b);
 
+	/* Convert and return result */
 	return PyLong_FromLong(result);
 }
 
-/* Export */
+
+/*------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+----- Exports and module initialization ----------------------------------------
+------------------------------------------------------------------------------*/
+
+
+/* Exports */
 static PyMethodDef AccelerationFunctions[] = {
 	{"ldist", levenshtein_distance, METH_VARARGS, "Compute levenshtein distance"},
 	{NULL, NULL, 0, NULL}
 };
 
+
+/* Module init */
 static struct PyModuleDef acceleration_module = {
 	PyModuleDef_HEAD_INIT,
 	"_acceleration",
