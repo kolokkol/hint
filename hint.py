@@ -8,10 +8,19 @@ with exception in their programs
 ###############################################################################
 
 import glob
+import io
 import sys
+import traceback
 import os
 import re 
 import site
+
+###############################################################################
+###############################################################################
+# Constants
+###############################################################################
+
+__author__ = 'Jesse Maarleveld'
 
 ###############################################################################
 ###############################################################################
@@ -219,7 +228,7 @@ class HandleUndefinedVariableError(NameError):
             attr = attr.replace('_', '')
         current = tb
         while current.tb_next is not None:
-            currnt = current.tb_next 
+            current = current.tb_next 
         frame = current.tb_frame
         namespaces = (frame.f_locals, frame.f_globals, frame.f_builtins)
         matches = {}
@@ -239,6 +248,20 @@ class HandleUndefinedVariableError(NameError):
                 return cls.handle(tb, inst, tb, strict=False)
             return False
         return format_options(attrs)
+
+
+###############################################################################
+###############################################################################
+# Specialized errors during mathematical operations
+###############################################################################
+
+
+@register
+class HandleZeroDivisionError(ZeroDivisionError):
+
+    @classmethod
+    def handle(cls, tp, inst, tb):
+        return 'If you divide by 0 the universe will explode'
                 
                 
 ###############################################################################
@@ -259,24 +282,33 @@ def hint(error=None):
         tp = type(error)
         inst = error
         tb = error.__traceback__
+    result = io.StringIO()
+    result.writelines('=================================================\n')
+    result.write(f'{os.path.split(__file__)[1]} by {__author__}\n')
+    result.write('-----------------------------------------------\n')
     if inst is None:
-        print('No exception has occurred :)')
-        return
-    for handler in _handlers:
-        if issubclass(handler, tp):
-            res = handler.handle(tp, inst, tb)
-            if res:
-                break
-    try:
-        assert type(res) is str
-        print(res)
-    except AssertionError:
-        print('Could not find any helpfull data.')
-    except UnboundLocalError:
-        # No matching exception was found;
-        # No class had been implemented to handle
-        # it yet
-        print(f'Cannot help you with the following exception: {inst!r}')
+        result.write('No exception has occurred :)\n')
+    else:
+        for handler in _handlers:
+            if issubclass(handler, tp):
+                res = handler.handle(tp, inst, tb)
+                if res:
+                    break
+        try:
+            assert type(res) is str
+            result.write(res + '\n')
+        except AssertionError:
+            result.write('Could not find any helpfull data.\n')
+        except UnboundLocalError:
+            # No matching exception was found;
+            # No class had been implemented to handle
+            # it yet
+            result.write(f'Cannot help you with the following exception: {inst!r}\n')
+    traceback.print_exception(tp, inst, tb)
+    result.write('=================================================\n')
+    result.seek(0)
+    for line in result:
+        print(line, file=sys.stderr, end='')
 
 
 def test(st):
@@ -288,6 +320,3 @@ except:
     hint()
     """)
         
-    
-
-    
