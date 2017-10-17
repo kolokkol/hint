@@ -262,7 +262,24 @@ class HandleZeroDivisionError(ZeroDivisionError):
     @classmethod
     def handle(cls, tp, inst, tb):
         return 'If you divide by 0 the universe will explode'
-                
+
+
+@register
+class HandleOverflowError(OverflowError):
+
+    @classmethod
+    def handle(cls, tp, inst, tb):
+        return 'Your calculation resulted in a result too large too handle'
+
+
+@register
+class HandleArithmeticError(ArithmeticError):
+
+    @classmethod
+    def handle(cls, tp, inst, tb):
+        if tp in (ArithmeticError.__subclasses__()):
+            return False
+        
                 
 ###############################################################################
 ###############################################################################
